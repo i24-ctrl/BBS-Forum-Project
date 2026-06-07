@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bbs.mapper.ReplyMapper">
+
+    <!-- 查询帖子下所有回复（含用户信息），按楼层升序 -->
+    <select id="selectReplyListWithUserByPostId" resultType="com.bbs.vo.ReplyVO">
+        SELECT
+            r.id,
+            r.post_id AS postId,
+            r.user_id AS userId,
+            r.parent_id AS parentId,
+            r.floor,
+            r.content,
+            r.status,
+            r.create_time AS createTime,
+            u.username AS authorName,
+            u.avatar AS authorAvatar
+        FROM reply r
+                 LEFT JOIN `user` u ON r.user_id = u.id
+        WHERE r.post_id = #{postId} AND r.deleted = 0 AND r.status = 1
+        ORDER BY r.floor ASC
+    </select>
+
+    <!-- 查询帖子最大楼层号（FOR UPDATE，事务内悲观锁） -->
+    <select id="selectMaxFloorByPostIdForUpdate" resultType="java.lang.Integer">
+        SELECT MAX(floor) FROM reply
+        WHERE post_id = #{postId} AND deleted = 0
+            FOR UPDATE
+    </select>
+
+</mapper>

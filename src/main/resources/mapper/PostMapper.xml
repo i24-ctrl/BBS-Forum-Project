@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bbs.mapper.PostMapper">
+
+    <!-- 分页查询帖子列表（含作者名、板块名） -->
+    <select id="selectPostListWithAuthor" resultType="com.bbs.vo.PostVO">
+        SELECT
+        p.id,
+        p.board_id AS boardId,
+        p.user_id AS userId,
+        p.title,
+        SUBSTRING(p.content, 1, 200) AS content,
+        p.view_count AS viewCount,
+        p.reply_count AS replyCount,
+        p.is_top AS isTop,
+        p.is_essence AS isEssence,
+        p.status,
+        p.last_reply_time AS lastReplyTime,
+        p.create_time AS createTime,
+        p.update_time AS updateTime,
+        u.username AS authorName,
+        u.avatar AS authorAvatar,
+        b.name AS boardName
+        FROM post p
+        LEFT JOIN `user` u ON p.user_id = u.id
+        LEFT JOIN board b ON p.board_id = b.id
+        WHERE p.deleted = 0 AND p.status = 1
+        <if test="boardId != null">
+            AND p.board_id = #{boardId}
+        </if>
+        <if test="essenceOnly != null and essenceOnly">
+            AND p.is_essence = 1
+        </if>
+        <choose>
+            <when test="orderType == 'board'">
+                ORDER BY p.is_top DESC, p.last_reply_time DESC
+            </when>
+            <otherwise>
+                ORDER BY
+                CASE WHEN p.is_top = 2 THEN 0 ELSE 1 END,
+                p.is_top DESC,
+                p.create_time DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 管理员分页查询帖子列表（包含所有状态） -->
+    <select id="selectAdminPostListWithAuthor" resultType="com.bbs.vo.PostVO">
+        SELECT
+        p.id,
+        p.board_id AS boardId,
+        p.user_id AS userId,
+        p.title,
+        SUBSTRING(p.content, 1, 200) AS content,
+        p.view_count AS viewCount,
+        p.reply_count AS replyCount,
+        p.is_top AS isTop,
+        p.is_essence AS isEssence,
+        p.status,
+        p.last_reply_time AS lastReplyTime,
+        p.create_time AS createTime,
+        p.update_time AS updateTime,
+        u.username AS authorName,
+        u.avatar AS authorAvatar,
+        b.name AS boardName
+        FROM post p
+        LEFT JOIN `user` u ON p.user_id = u.id
+        LEFT JOIN board b ON p.board_id = b.id
+        WHERE p.deleted = 0
+        ORDER BY p.create_time DESC
+    </select>
+
+    <!-- 查询帖子最大楼层号 -->
+    <select id="selectMaxFloorByPostId" resultType="java.lang.Integer">
+        SELECT MAX(floor) FROM reply
+        WHERE post_id = #{postId} AND deleted = 0
+    </select>
+
+    <!-- 更新帖子回复数和最后回复时间 -->
+    <update id="updateReplyCountAndTime">
+        UPDATE post
+        SET reply_count = reply_count + 1,
+            last_reply_time = #{lastReplyTime}
+        WHERE id = #{postId} AND deleted = 0
+    </update>
+
+</mapper>

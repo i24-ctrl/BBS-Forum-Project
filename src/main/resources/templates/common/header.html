@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"></head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bbs-navbar sticky-top" th:fragment="header">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">
+            <i class="bi bi-mortarboard-fill"></i> 校内BBS
+        </a>
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house-door me-1"></i>首页</a></li>
+                <li class="nav-item"><a class="nav-link" href="/boards"><i class="bi bi-grid me-1"></i>板块</a></li>
+                <li class="nav-item"><a class="nav-link" href="/posts"><i class="bi bi-chat-square-text me-1"></i>帖子</a></li>
+                <li class="nav-item"><a class="nav-link" href="/demands"><i class="bi bi-coin me-1"></i>悬赏</a></li>
+            </ul>
+
+            <ul class="navbar-nav align-items-lg-center" id="navBeforeLogin">
+                <li class="nav-item"><a class="nav-link" href="/login">登录</a></li>
+                <li class="nav-item ms-lg-1">
+                    <a class="btn btn-light btn-sm rounded-pill px-3 fw-semibold" href="/register">注册</a>
+                </li>
+            </ul>
+
+            <ul class="navbar-nav align-items-lg-center" id="navAfterLogin" style="display:none;">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-1" href="#" id="userDropdown"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle"></i>
+                        <span id="navUsername">用户</span>
+                        <span class="badge bbs-score-badge ms-1" id="navScore">0</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/profile"><i class="bi bi-person me-2"></i>个人中心</a></li>
+                        <li><a class="dropdown-item" href="/post-form"><i class="bi bi-pencil-square me-2"></i>发帖</a></li>
+                        <li><a class="dropdown-item" href="/demand-form"><i class="bi bi-coin me-2"></i>发布悬赏</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li id="adminMenuEntry" style="display:none;">
+                            <a class="dropdown-item" href="/admin/user-list"><i class="bi bi-people me-2"></i>用户管理</a>
+                        </li>
+                        <li id="adminPostMenuEntry" style="display:none;">
+                            <a class="dropdown-item" href="/admin/post-list"><i class="bi bi-file-text me-2"></i>帖子管理</a>
+                        </li>
+                        <li id="adminBoardMenuEntry" style="display:none;">
+                            <a class="dropdown-item" href="/admin/board-list"><i class="bi bi-folder me-2"></i>板块管理</a>
+                        </li>
+                        <li id="adminDivider" style="display:none;"><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="javascript:void(0)" id="logoutBtn"><i class="bi bi-box-arrow-right me-2"></i>退出登录</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+</body>
+</html>

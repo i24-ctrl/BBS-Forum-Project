@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bbs.mapper.DemandMapper">
+
+    <!-- 分页查询需求列表（含发布者用户名） -->
+    <select id="selectDemandListWithUser" resultType="com.bbs.vo.DemandVO">
+        SELECT
+        d.id,
+        d.user_id AS userId,
+        d.title,
+        d.content,
+        d.score,
+        d.status,
+        d.resolver_id AS resolverId,
+        d.adopt_reply_id AS adoptReplyId,
+        d.resolve_time AS resolveTime,
+        d.create_time AS createTime,
+        d.update_time AS updateTime,
+        u.username AS authorName,
+        u.avatar AS authorAvatar,
+        COALESCE(dr.reply_count, 0) AS replyCount
+        FROM demand d
+        LEFT JOIN `user` u ON d.user_id = u.id
+        LEFT JOIN (
+        SELECT demand_id, COUNT(*) AS reply_count
+        FROM demand_reply
+        WHERE deleted = 0
+        GROUP BY demand_id
+        ) dr ON d.id = dr.demand_id
+        WHERE d.deleted = 0
+        <if test="status != null">
+            AND d.status = #{status}
+        </if>
+        ORDER BY d.create_time DESC
+    </select>
+
+</mapper>

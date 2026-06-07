@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <th:block th:replace="~{common/head :: assets('发帖')}"></th:block>
+  <link href="https://unpkg.com/@wangeditor/editor@5.1.23/dist/css/style.css" rel="stylesheet">
+  <style>
+    #editor-toolbar-wrapper { border: 1px solid var(--bbs-border); border-bottom: none; border-radius: 10px 10px 0 0; }
+    #editor-wrapper { border: 1px solid var(--bbs-border); border-radius: 0 0 10px 10px; }
+    #editor-container { min-height: 350px; }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{common/header :: header}"></div>
+
+<main class="bbs-main">
+<div class="bbs-container-narrow">
+  <div class="bbs-card">
+    <div class="bbs-card-body">
+      <h4 class="bbs-page-title mb-4" id="formTitle"><i class="bi bi-pencil-square me-1"></i>发布帖子</h4>
+
+      <div class="mb-3">
+        <label class="form-label">选择板块 <span class="text-danger">*</span></label>
+        <select class="form-select" id="boardSelect" required>
+          <option value="">请选择板块</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">标题 <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="postTitle"
+               placeholder="请输入标题（3-200字）" maxlength="200" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">内容 <span class="text-danger">*</span></label>
+        <div id="editor-toolbar-wrapper">   <!-- 破折号 - -->
+          <div id="editor-toolbar"></div>
+        </div>
+        <div id="editor-wrapper">
+          <div id="editor-container"></div>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-bbs-primary px-4" id="submitBtn" onclick="submitPost()">
+        发布帖子
+      </button>
+    </div>
+  </div>
+</div>
+</main>
+
+<div th:replace="~{common/footer :: footer}"></div>
+<div class="toast-container position-fixed top-0 end-0 p-3" id="globalToastContainer"></div>
+
+<script src="https://unpkg.com/@wangeditor/editor@5.1.23/dist/index.js"></script>
+<script src="/static/js/common.js"></script>
+<script>
+  (function () {
+    'use strict';
+
+    var token = localStorage.getItem('token');
+    if (!token) {
+      if (confirm('请先登录后再发帖，是否跳转到登录页？')) {
+        window.location.href = '/login';
+      }
+    }
+
+    // ==================== wangEditor 初始化 ====================
+
+    var editorConfig = {
+      placeholder: '请输入帖子内容...',
+      MENU_CONF: {
+        uploadImage: {
+          server: '/api/v1/upload/image',
+          fieldName: 'file',
+          maxFileSize: 2 * 1024 * 1024,
+          maxNumberOfFiles: 10,
+          allowedFileTypes: ['image/jpeg', 'image/png', 'image/gif'],
+          // 自定义上传：带 token，返回 url 给编辑器插入
+          customUpload: function (file, insertFn) {
+            var formData = new FormData();
+            formData.append('file', file);
+            fetch('/api/v1/upload/image', {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + token },
+              body: formData
+            })
+                    .then(function (res) { return res.json(); })
+                    .then(function (res) {
+                      if (res.errno === 0 && res.data && res.data.length > 0) {
+                        // insertFn(url, alt, href)
+                        insertFn(res.data[0].url, res.data[0].alt || '图片', res.data[0].href || '');
+                      } else {
+                        alert(res.message || '上传失败');
+                      }
+                    })
+                    .catch(function () {
+                      alert('上传失败，请检查网络');
+                    });
+          },
+          // 默认上传回调（作为兜底）
+          customInsert: function (res, insertFn) {
+            if (res.errno === 0 && res.data && res.data.length > 0) {
+              insertFn(res.data[0].url, res.data[0].alt || '图片', res.data[0].href || '');
+            } else {
+              alert(res.message || '上传失败');
+            }
+          }
+        }
+      }
+    };
+
+    var editor = window.wangEditor.createEditor({
+      selector: '#editor-container',
+      html: '',
+      config: editorConfig,
+      mode: 'default'
+    });
+
+    window.wangEditor.createToolbar({
+      editor: editor,
+      selector: '#editor-toolbar',
+      config: { excludeKeys: ['fullScreen'] },
+      mode: 'default'
+    });
+
+    // ==================== 板块列表 & 编辑模式 ====================
+
+    var urlParams = new URLSearchParams(window.location.search);
+    var editPostId = urlParams.get('id');
+    var boardsLoaded = false;
+    var pendingEditData = null;
+
+    function loadBoards() {
+      fetch('/api/v1/boards')
+              .then(function (res) { return res.json(); })
+              .then(function (result) {
+                if (result.code === 200 && result.data) {
+                  var select = document.getElementById('boardSelect');
+                  result.data.forEach(function (b) {
+                    var option = document.createElement('option');
+                    option.value = b.id;
+                    option.textContent = b.name;
+                    select.appendChild(option);
+                  });
+                }
+                boardsLoaded = true;
+                if (pendingEditData) fillEditData(pendingEditData);
+              });
+    }
+
+    function loadEditPost() {
+      if (!editPostId) return;
+      document.getElementById('formTitle').textContent = '✏️ 编辑帖子';
+      document.getElementById('submitBtn').textContent = '保存修改';
+      window._editPostId = editPostId;
+
+      fetch('/api/v1/posts/' + editPostId)
+              .then(function (res) { return res.json(); })
+              .then(function (result) {
+                if (result.code === 200 && result.data) {
+                  if (boardsLoaded) {
+                    fillEditData(result.data);
+                  } else {
+                    pendingEditData = result.data;
+                  }
+                } else {
+                  BbsToast.error(result.msg || '加载帖子失败');
+                }
+              })
+              .catch(function () {
+                BbsToast.error('加载帖子失败，请刷新重试');
+              });
+    }
+
+    function fillEditData(p) {
+      document.getElementById('postTitle').value = p.title || '';
+      var boardSelect = document.getElementById('boardSelect');
+      for (var i = 0; i < boardSelect.options.length; i++) {
+        if (boardSelect.options[i].value == p.boardId) {
+          boardSelect.selectedIndex = i;
+          break;
+        }
+      }
+      // 延迟设置编辑器内容，确保编辑器已完全初始化
+      setTimeout(function () {
+        editor.setHtml(p.content || '');
+      }, 200);
+    }
+
+    // ==================== 提交 ====================
+
+    window.submitPost = function () {
+      if (!token) { BbsToast.error('请先登录'); return; }
+
+      var boardId = document.getElementById('boardSelect').value;
+      var title = document.getElementById('postTitle').value.trim();
+      var content = editor.getHtml();
+
+      if (!boardId) { BbsToast.error('请选择板块'); return; }
+      if (!title || title.length < 3) { BbsToast.error('标题至少3个字'); return; }
+      if (!content || content === '<p><br></p>' || content === '<p></p>') {
+        BbsToast.error('请输入内容'); return;
+      }
+
+      var submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '提交中...';
+
+      var isEdit = !!editPostId;
+      var url = isEdit ? '/api/v1/posts/' + editPostId : '/api/v1/posts';
+      var method = isEdit ? 'PUT' : 'POST';
+
+      fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ boardId: parseInt(boardId), title: title, content: content })
+      })
+              .then(function (res) { return res.json(); })
+              .then(function (result) {
+                if (result.code === 200) {
+                  BbsToast.success(isEdit ? '修改成功' : '发帖成功！');
+                  setTimeout(function () {
+                    var redirectId = isEdit ? editPostId : result.data.id;
+                    window.location.href = '/post-detail?id=' + redirectId;
+                  }, 800);
+                } else {
+                  BbsToast.error(result.msg);
+                  submitBtn.disabled = false;
+                  submitBtn.textContent = isEdit ? '保存修改' : '发布帖子';
+                }
+              })
+              .catch(function () {
+                BbsToast.error('网络异常');
+                submitBtn.disabled = false;
+                submitBtn.textContent = isEdit ? '保存修改' : '发布帖子';
+              });
+    };
+
+    // 启动
+    loadBoards();
+    loadEditPost();
+
+  })();
+</script>
+
+</body>
+</html>

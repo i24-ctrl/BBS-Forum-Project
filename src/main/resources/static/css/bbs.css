@@ -1,0 +1,554 @@
+/* ============================================================
+   校内 BBS 全局样式
+   ============================================================ */
+:root {
+    --bbs-primary: #6366f1;
+    --bbs-primary-dark: #4f46e5;
+    --bbs-secondary: #8b5cf6;
+    --bbs-accent: #f59e0b;
+    --bbs-success: #10b981;
+    --bbs-danger: #ef4444;
+    --bbs-text: #1e293b;
+    --bbs-text-muted: #64748b;
+    --bbs-border: #e2e8f0;
+    --bbs-bg: #f1f5f9;
+    --bbs-card: #ffffff;
+    --bbs-radius: 14px;
+    --bbs-radius-lg: 18px;
+    --bbs-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+    --bbs-shadow-hover: 0 12px 32px rgba(99, 102, 241, 0.12);
+    --bbs-nav-height: 64px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--bbs-text);
+    background: linear-gradient(160deg, #eef2ff 0%, var(--bbs-bg) 40%, #f8fafc 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+a { text-decoration: none; }
+a:hover { text-decoration: none; }
+
+/* ---------- 导航栏 ---------- */
+.bbs-navbar {
+    background: linear-gradient(135deg, #312e81 0%, #4338ca 50%, #6366f1 100%) !important;
+    box-shadow: 0 4px 20px rgba(49, 46, 129, 0.25);
+    padding: 0.65rem 0;
+    backdrop-filter: blur(8px);
+}
+
+.bbs-navbar .navbar-brand {
+    font-size: 1.15rem;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.bbs-navbar .nav-link {
+    color: rgba(255, 255, 255, 0.88) !important;
+    font-weight: 500;
+    padding: 0.45rem 0.85rem !important;
+    border-radius: 8px;
+    margin: 0 0.1rem;
+    transition: background 0.2s, color 0.2s;
+}
+
+.bbs-navbar .nav-link:hover,
+.bbs-navbar .nav-link.active {
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.bbs-navbar .dropdown-menu {
+    border: none;
+    border-radius: 12px;
+    box-shadow: var(--bbs-shadow-hover);
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.bbs-navbar .dropdown-item {
+    border-radius: 8px;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.92rem;
+}
+
+.bbs-navbar .dropdown-item:hover {
+    background: #eef2ff;
+    color: var(--bbs-primary-dark);
+}
+
+.bbs-score-badge {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+    color: #78350f !important;
+    font-weight: 600;
+    border-radius: 20px;
+    padding: 0.25em 0.65em;
+}
+
+/* ---------- 布局容器 ---------- */
+.bbs-main {
+    flex: 1;
+    width: 100%;
+}
+
+.bbs-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1.75rem 1rem 2.5rem;
+}
+
+.bbs-container-narrow {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 1.75rem 1rem 2.5rem;
+}
+
+.bbs-container-auth {
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 3rem 1rem;
+}
+
+.bbs-container-wide {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.75rem 1rem 2.5rem;
+}
+
+/* ---------- 页面标题栏 ---------- */
+.bbs-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.bbs-page-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--bbs-text);
+}
+
+.bbs-section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--bbs-text);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.bbs-section-title::after {
+    content: "";
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, var(--bbs-primary), transparent);
+    margin-left: 0.5rem;
+    max-width: 120px;
+}
+
+/* ---------- 卡片 ---------- */
+.bbs-card {
+    background: var(--bbs-card);
+    border: 1px solid var(--bbs-border);
+    border-radius: var(--bbs-radius);
+    box-shadow: var(--bbs-shadow);
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+}
+
+.bbs-card-body {
+    padding: 1.5rem;
+}
+
+.bbs-card:hover {
+    box-shadow: var(--bbs-shadow-hover);
+}
+
+/* ---------- Hero 横幅 ---------- */
+.bbs-hero {
+    background: linear-gradient(135deg, #4338ca 0%, #6366f1 45%, #8b5cf6 100%);
+    color: #fff;
+    border-radius: var(--bbs-radius-lg);
+    padding: 2.5rem 2rem;
+    margin-bottom: 1.75rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.bbs-hero::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 60%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.bbs-hero h1, .bbs-hero h2 {
+    font-weight: 700;
+    position: relative;
+    margin-bottom: 0.5rem;
+}
+
+.bbs-hero p {
+    opacity: 0.9;
+    position: relative;
+    margin: 0;
+}
+
+/* ---------- 快捷入口 ---------- */
+.bbs-quick-grid .bbs-quick-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 1.1rem 0.75rem;
+    border-radius: var(--bbs-radius);
+    border: 1px solid var(--bbs-border);
+    background: var(--bbs-card);
+    color: var(--bbs-text);
+    font-weight: 600;
+    font-size: 0.92rem;
+    box-shadow: var(--bbs-shadow);
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    height: 100%;
+}
+
+.bbs-quick-grid .bbs-quick-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--bbs-shadow-hover);
+    border-color: var(--bbs-primary);
+    color: var(--bbs-primary-dark);
+}
+
+.bbs-quick-grid .bbs-quick-btn i {
+    font-size: 1.5rem;
+    color: var(--bbs-primary);
+}
+
+/* ---------- 板块卡片 ---------- */
+.bbs-board-card {
+    border: 1px solid var(--bbs-border);
+    border-radius: var(--bbs-radius);
+    background: var(--bbs-card);
+    box-shadow: var(--bbs-shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    height: 100%;
+}
+
+.bbs-board-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--bbs-shadow-hover);
+    border-color: #c7d2fe;
+}
+
+.bbs-board-icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+/* ---------- 帖子列表项 ---------- */
+.bbs-post-item {
+    background: var(--bbs-card);
+    border: 1px solid var(--bbs-border);
+    border-radius: var(--bbs-radius);
+    padding: 1rem 1.15rem;
+    margin-bottom: 0.65rem;
+    transition: background 0.15s, box-shadow 0.15s, border-color 0.15s;
+    cursor: pointer;
+}
+
+.bbs-post-item:hover {
+    background: #fafbff;
+    border-color: #c7d2fe;
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.08);
+}
+
+.bbs-post-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--bbs-text);
+}
+
+.bbs-post-item:hover .bbs-post-title {
+    color: var(--bbs-primary-dark);
+}
+
+.bbs-post-meta {
+    font-size: 0.85rem;
+    color: var(--bbs-text-muted);
+}
+
+.bbs-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--bbs-primary), var(--bbs-secondary));
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+/* ---------- 徽章 ---------- */
+.bbs-badge-top {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    font-size: 0.68rem;
+    font-weight: 600;
+}
+
+.bbs-badge-essence {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+    color: #78350f !important;
+    font-size: 0.68rem;
+    font-weight: 600;
+}
+
+/* ---------- 按钮 ---------- */
+.btn-bbs-primary {
+    background: linear-gradient(135deg, var(--bbs-primary), var(--bbs-secondary));
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 0.45rem 1.1rem;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.btn-bbs-primary:hover {
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+}
+
+.btn-bbs-outline {
+    border: 1.5px solid var(--bbs-primary);
+    color: var(--bbs-primary-dark);
+    font-weight: 600;
+    border-radius: 10px;
+    background: transparent;
+}
+
+.btn-bbs-outline:hover {
+    background: #eef2ff;
+    color: var(--bbs-primary-dark);
+    border-color: var(--bbs-primary-dark);
+}
+
+/* ---------- 筛选栏 ---------- */
+.bbs-filter-bar {
+    background: var(--bbs-card);
+    border: 1px solid var(--bbs-border);
+    border-radius: var(--bbs-radius);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+    box-shadow: var(--bbs-shadow);
+}
+
+.bbs-filter-bar .form-check-input:checked {
+    background-color: var(--bbs-accent);
+    border-color: var(--bbs-accent);
+}
+
+/* ---------- 富文本内容区 ---------- */
+.bbs-rich-content {
+    font-size: 1.05rem;
+    line-height: 1.85;
+    word-break: break-word;
+}
+
+.bbs-rich-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.bbs-rich-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* ---------- 回复区 ---------- */
+.bbs-reply-item {
+    border-bottom: 1px solid var(--bbs-border);
+    padding: 1rem 0;
+}
+
+.bbs-reply-item:last-child {
+    border-bottom: none;
+}
+
+.bbs-reply-child {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 0.65rem 0.9rem;
+    margin-top: 0.5rem;
+    border-left: 3px solid #c7d2fe;
+}
+
+.bbs-reply-form-sticky {
+    position: sticky;
+    bottom: 1rem;
+    z-index: 10;
+}
+
+/* ---------- 登录/注册 ---------- */
+.bbs-auth-card {
+    background: var(--bbs-card);
+    border: 1px solid var(--bbs-border);
+    border-radius: var(--bbs-radius-lg);
+    box-shadow: var(--bbs-shadow-hover);
+    overflow: hidden;
+}
+
+.bbs-auth-card .card-body {
+    padding: 2rem;
+}
+
+.bbs-auth-title {
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: var(--bbs-text);
+}
+
+.bbs-form-control:focus {
+    border-color: var(--bbs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.15);
+}
+
+/* ---------- 页脚 ---------- */
+.bbs-footer {
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    color: rgba(255, 255, 255, 0.75);
+    padding: 2rem 0 1.5rem;
+    margin-top: auto;
+}
+
+.bbs-footer a {
+    color: #a5b4fc;
+}
+
+.bbs-footer a:hover {
+    color: #fff;
+}
+
+.bbs-footer-brand {
+    font-weight: 700;
+    color: #fff;
+    font-size: 1rem;
+}
+
+/* ---------- 管理后台 ---------- */
+.bbs-admin-table {
+    font-size: 0.92rem;
+}
+
+.bbs-admin-table thead {
+    background: #f8fafc;
+}
+
+.bbs-admin-table tbody tr:hover {
+    background: #fafbff;
+}
+
+/* ---------- 状态标签 ---------- */
+.bbs-status-0 { background: #3b82f6; color: #fff; }
+.bbs-status-1 { background: #10b981; color: #fff; }
+.bbs-status-2 { background: #64748b; color: #fff; }
+
+/* ---------- 空状态 ---------- */
+.bbs-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--bbs-text-muted);
+}
+
+/* ---------- 分页 ---------- */
+.pagination .page-link {
+    border-radius: 8px !important;
+    margin: 0 2px;
+    border-color: var(--bbs-border);
+    color: var(--bbs-primary-dark);
+}
+
+.pagination .page-item.active .page-link {
+    background: var(--bbs-primary);
+    border-color: var(--bbs-primary);
+}
+
+/* ---------- 统计侧栏 ---------- */
+.bbs-stats-card {
+    background: linear-gradient(145deg, #fff 0%, #f8fafc 100%);
+    border: 1px solid var(--bbs-border);
+    border-radius: var(--bbs-radius);
+    box-shadow: var(--bbs-shadow);
+}
+
+.bbs-stats-card .stat-num {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--bbs-primary);
+}
+
+/* ---------- 密码强度（注册页） ---------- */
+.password-strength-bar {
+    height: 6px;
+    border-radius: 3px;
+    margin-top: 6px;
+    transition: all 0.3s;
+}
+
+.strength-weak { width: 33%; background-color: #ef4444; }
+.strength-medium { width: 66%; background-color: #f59e0b; }
+.strength-strong { width: 100%; background-color: #10b981; }
+
+/* ---------- 悬赏卡片 ---------- */
+.bbs-demand-card {
+    background: var(--bbs-card);
+    border: 1px solid var(--bbs-border);
+    border-radius: var(--bbs-radius);
+    box-shadow: var(--bbs-shadow);
+    margin-bottom: 0.85rem;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.bbs-demand-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--bbs-shadow-hover);
+}
+
+.bbs-score-text {
+    font-weight: 700;
+    color: var(--bbs-accent);
+}
+
+.bbs-nav-pills .nav-link {
+    border-radius: 20px;
+    padding: 0.35rem 1rem;
+    font-weight: 500;
+}
+
+.bbs-nav-pills .nav-link.active {
+    background: linear-gradient(135deg, var(--bbs-primary), var(--bbs-secondary));
+}

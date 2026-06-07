@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+    <head th:replace="~{common/head :: head('用户注册')}"></head>
+    <body>
+
+    <div th:replace="~{common/header :: header}"></div>
+
+    <main class="bbs-main">
+        <div class="bbs-container-auth" style="max-width:600px;">
+            <div class="bbs-auth-card">
+                <div class="card-body">
+                    <h3 class="bbs-auth-title"><i class="bi bi-person-plus me-1"></i>用户注册</h3>
+
+                    <form id="registerForm">
+                        <!-- 用户名 -->
+                        <div class="mb-3">
+                            <label for="username" class="form-label">用户名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="username" name="username"
+                                   placeholder="3-50位字符" required minlength="3" maxlength="50">
+                            <div class="form-text">登录时使用，注册后不可修改</div>
+                        </div>
+
+                        <!-- 密码 -->
+                        <div class="mb-3">
+                            <label for="password" class="form-label">密码 <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="password" name="password"
+                                   placeholder="至少6位，建议包含字母+数字" required minlength="6">
+                            <div class="password-strength-bar" id="passwordStrengthBar"></div>
+                            <div class="form-text" id="passwordHint">请输入密码</div>
+                        </div>
+
+                        <!-- 确认密码 -->
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">确认密码 <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
+                                   placeholder="请再次输入密码" required>
+                            <div class="form-text text-danger" id="confirmPasswordHint" style="display:none;">两次密码不一致</div>
+                        </div>
+
+                        <!-- 真实姓名 -->
+                        <div class="mb-3">
+                            <label for="realName" class="form-label">真实姓名</label>
+                            <input type="text" class="form-control" id="realName" name="realName"
+                                   placeholder="选填" maxlength="50">
+                        </div>
+
+                        <!-- 手机号 -->
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">手机号</label>
+                            <input type="tel" class="form-control" id="phone" name="phone"
+                                   placeholder="选填" maxlength="20">
+                        </div>
+
+                        <!-- 邮箱 -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label">邮箱</label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                   placeholder="选填" maxlength="100">
+                        </div>
+
+                        <!-- 工作地点 -->
+                        <div class="mb-3">
+                            <label for="workPlace" class="form-label">工作地点</label>
+                            <input type="text" class="form-control" id="workPlace" name="workPlace"
+                                   placeholder="如：北京、上海" maxlength="100">
+                        </div>
+
+                        <!-- 工作性质 -->
+                        <div class="mb-3">
+                            <label for="jobNature" class="form-label">工作性质</label>
+                            <select class="form-select" id="jobNature" name="jobNature">
+                                <option value="">请选择</option>
+                                <option value="学生">学生</option>
+                                <option value="前端开发">前端开发</option>
+                                <option value="后端开发">后端开发</option>
+                                <option value="全栈开发">全栈开发</option>
+                                <option value="测试">测试</option>
+                                <option value="运维">运维</option>
+                                <option value="产品经理">产品经理</option>
+                                <option value="UI设计">UI设计</option>
+                                <option value="其他">其他</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-bbs-primary w-100" id="submitBtn">立即注册</button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        已有账号？<a href="/login">立即登录</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div th:replace="~{common/footer :: footer}"></div>
+    <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+    <script src="/static/js/common.js"></script>
+    <script>
+            // ==================== 密码强度检测 ====================
+            const passwordInput = document.getElementById('password');
+            const strengthBar = document.getElementById('passwordStrengthBar');
+            const passwordHint = document.getElementById('passwordHint');
+
+            passwordInput.addEventListener('input', function() {
+            const val = this.value;
+            strengthBar.className = 'password-strength-bar';
+            if (val.length === 0) {
+            passwordHint.textContent = '请输入密码';
+            return;
+            }
+            let strength = 0;
+            if (val.length >= 6) strength++;
+            if (val.length >= 10) strength++;
+            if (/[a-zA-Z]/.test(val) && /[0-9]/.test(val)) strength++;
+            if (/[^a-zA-Z0-9]/.test(val)) strength++;
+
+            if (strength <= 1) {
+            strengthBar.classList.add('strength-weak');
+            passwordHint.textContent = '密码强度：弱 - 建议增加字母+数字组合';
+            } else if (strength === 2) {
+            strengthBar.classList.add('strength-medium');
+            passwordHint.textContent = '密码强度：中等';
+            } else {
+            strengthBar.classList.add('strength-strong');
+            passwordHint.textContent = '密码强度：强 ✓';
+            }
+            });
+
+            // ==================== 确认密码校验 ====================
+            const confirmInput = document.getElementById('confirmPassword');
+            const confirmHint = document.getElementById('confirmPasswordHint');
+
+            confirmInput.addEventListener('input', function() {
+            if (this.value && this.value !== passwordInput.value) {
+            confirmHint.style.display = 'block';
+            } else {
+            confirmHint.style.display = 'none';
+            }
+            });
+
+            // ==================== Toast 提示 ====================
+            function showToast(message, type) {
+            const container = document.getElementById('toastContainer');
+            const bgClass = type === 'success' ? 'bg-success' : 'bg-danger';
+            const html = '<div class="toast align-items-center text-white ' + bgClass + ' border-0" role="alert">' +
+            '<div class="d-flex"><div class="toast-body">' + message + '</div>' +
+                '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>';
+            container.insertAdjacentHTML('beforeend', html);
+            const toastEl = container.lastElementChild;
+            const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+            toast.show();
+            toastEl.addEventListener('hidden.bs.toast', function() { toastEl.remove(); });
+            }
+
+            // ==================== 表单提交 ====================
+            document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // 校验两次密码一致
+            if (passwordInput.value !== confirmInput.value) {
+            showToast('两次密码输入不一致', 'error');
+            return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '提交中...';
+
+            const data = {
+            username: document.getElementById('username').value.trim(),
+            password: passwordInput.value,
+            realName: document.getElementById('realName').value.trim() || null,
+            phone: document.getElementById('phone').value.trim() || null,
+            email: document.getElementById('email').value.trim() || null,
+            workPlace: document.getElementById('workPlace').value.trim() || null,
+            jobNature: document.getElementById('jobNature').value || null
+            };
+
+            fetch('/api/v1/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(result => {
+            if (result.code === 200) {
+            showToast(result.msg + '，即将跳转登录页...', 'success');
+            setTimeout(function() { window.location.href = '/login'; }, 1500);
+            } else {
+            showToast(result.msg, 'error');
+            }
+            })
+            .catch(err => {
+            showToast('网络异常，请稍后重试', 'error');
+            })
+            .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '立即注册';
+            });
+            });
+        </script>
+
+    </body>
+</html>

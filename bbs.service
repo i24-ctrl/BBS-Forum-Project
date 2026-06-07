@@ -1,0 +1,48 @@
+# ============================================================
+# 校内BBS systemd 服务配置
+# 适用系统：CentOS 7+ / Ubuntu 16.04+
+# 安装步骤：
+#   1. sudo cp bbs.service /etc/systemd/system/
+#   2. sudo systemctl daemon-reload
+#   3. sudo systemctl enable bbs
+#   4. sudo systemctl start bbs
+# ============================================================
+
+[Unit]
+Description=校内BBS论坛系统
+Documentation=https://github.com/yourname/bbs
+After=network.target mysql.service redis.service
+Wants=network.target mysql.service redis.service
+
+[Service]
+Type=simple
+User=bbs                                    # 运行用户（需预先创建）
+Group=bbs
+WorkingDirectory=/opt/bbs
+ExecStart=/usr/bin/java -jar /opt/bbs/bbs.jar --spring.profiles.active=prod
+ExecStop=/bin/kill -SIGTERM $MAINPID
+ExecReload=/bin/kill -SIGUSR2 $MAINPID
+
+# JVM 参数优化
+Environment="JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseG1GC -Dfile.encoding=UTF-8"
+ExecStart=/usr/bin/java $JAVA_OPTS -jar /opt/bbs/bbs.jar --spring.profiles.active=prod
+
+# 重启策略
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=200
+StartLimitBurst=5
+
+# 日志
+StandardOutput=append:/opt/bbs/logs/stdout.log
+StandardError=append:/opt/bbs/logs/stderr.log
+
+# 安全限制
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/bbs/upload /opt/bbs/logs
+
+[Install]
+WantedBy=multi-user.target

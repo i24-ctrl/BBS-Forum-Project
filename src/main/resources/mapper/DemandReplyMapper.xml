@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bbs.mapper.DemandReplyMapper">
+
+    <!-- 查询需求下所有回复（含用户信息） -->
+    <select id="selectReplyListWithUserByDemandId" resultType="com.bbs.vo.DemandReplyVO">
+        SELECT
+            dr.id,
+            dr.demand_id AS demandId,
+            dr.user_id AS userId,
+            dr.content,
+            dr.status,
+            dr.create_time AS createTime,
+            u.username AS authorName,
+            u.avatar AS authorAvatar
+        FROM demand_reply dr
+                 LEFT JOIN `user` u ON dr.user_id = u.id
+        WHERE dr.demand_id = #{demandId} AND dr.deleted = 0
+        ORDER BY dr.create_time ASC
+    </select>
+
+</mapper>

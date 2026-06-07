@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/head :: head('帖子列表')}"></head>
+<body>
+
+<div th:replace="~{common/header :: header}"></div>
+
+<main class="bbs-main">
+<div class="bbs-container-narrow">
+    <div class="bbs-page-header">
+        <h5 class="bbs-page-title" id="pageTitle"><i class="bi bi-chat-square-text me-1"></i>帖子列表</h5>
+        <a href="/post-form" class="btn btn-bbs-primary btn-sm"><i class="bi bi-pencil-square me-1"></i>发帖</a>
+    </div>
+
+    <div class="bbs-filter-bar">
+        <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" id="essenceOnlySwitch">
+            <label class="form-check-label fw-semibold" for="essenceOnlySwitch"><i class="bi bi-star-fill text-warning me-1"></i>只看精华</label>
+        </div>
+    </div>
+
+    <div id="postList"><div class="bbs-empty">加载中...</div></div>
+    <nav id="pagination" class="d-flex justify-content-center mt-3"></nav>
+</div>
+</main>
+
+<div th:replace="~{common/footer :: footer}"></div>
+<script src="/static/js/common.js"></script>
+<script>
+    const token = localStorage.getItem('token');
+    const urlParams = new URLSearchParams(window.location.search);
+    const boardId = urlParams.get('boardId');
+    const currentPage = parseInt(urlParams.get('page')) || 1;
+    let essenceOnly = urlParams.get('essence') === '1';
+
+    document.getElementById('essenceOnlySwitch').checked = essenceOnly;
+    document.getElementById('essenceOnlySwitch').addEventListener('change', function () {
+        essenceOnly = this.checked;
+        const newUrl = new URL(window.location);
+        if (essenceOnly) newUrl.searchParams.set('essence', '1');
+        else newUrl.searchParams.delete('essence');
+        newUrl.searchParams.set('page', '1');
+        window.history.replaceState({}, '', newUrl);
+        loadPosts(1);
+    });
+
+    if (boardId) {
+        document.getElementById('pageTitle').innerHTML = '<i class="bi bi-folder2-open me-1"></i>板块帖子';
+    }
+
+    function apiGet(url) {
+        const headers = {};
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+        return fetch(url, { headers }).then(res => res.json());
+    }
+
+    function loadPosts(page) {
+        page = page || currentPage;
+        let url = boardId
+            ? '/api/v1/boards/' + boardId + '/posts?page=' + page + '&size=15'
+            : '/api/v1/posts?page=' + page + '&size=15';
+        if (essenceOnly) url += '&essenceOnly=true';
+
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('page', page);
+        if (essenceOnly) newUrl.searchParams.set('essence', '1');
+        else newUrl.searchParams.delete('essence');
+        window.history.replaceState({}, '', newUrl);
+
+        apiGet(url).then(result => {
+            if (result.code === 200) renderPosts(result.data);
+        });
+    }
+
+    function renderPosts(data) {
+        const container = document.getElementById('postList');
+        if (!data.records || data.records.length === 0) {
+            const emptyMsg = essenceOnly ? '暂无精华帖子' : '暂无帖子，<a href="/post-form">发一篇吧</a>';
+            container.innerHTML = '<div class="bbs-empty">' + emptyMsg + '</div>';
+            document.getElementById('pagination').innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        data.records.forEach(p => {
+            html += '<div class="bbs-post-item"><div class="d-flex align-items-start gap-3">';
+            html += '<div class="bbs-avatar">' + (p.authorName || '?').charAt(0).toUpperCase() + '</div>';
+            html += '<div class="flex-grow-1">';
+            html += '<div class="mb-1">';
+            if (p.isTop === 2) html += '<span class="badge bbs-badge-top me-1">全局置顶</span>';
+            else if (p.isTop === 1) html += '<span class="badge bbs-badge-top me-1">置顶</span>';
+            if (p.isEssence === 1) html += '<span class="badge bbs-badge-essence me-1">精华</span>';
+            html += '<a href="/post-detail?id=' + p.id + '" class="bbs-post-title">' + escapeHtml(p.title) + '</a></div>';
+            html += '<div class="bbs-post-meta">';
+            html += escapeHtml(p.authorName || '匿名');
+            if (p.boardName) html += ' · [' + escapeHtml(p.boardName) + ']';
+            html += ' · <i class="bi bi-eye"></i> ' + (p.viewCount || 0);
+            html += ' · <i class="bi bi-chat"></i> ' + (p.replyCount || 0);
+            html += ' · ' + (p.lastReplyTimeStr || p.createTime || '');
+            html += '</div></div></div></div>';
+        });
+        container.innerHTML = html;
+        renderPagination(data);
+    }
+
+    function renderPagination(data) {
+        const pag = document.getElementById('pagination');
+        if (data.pages <= 1) { pag.innerHTML = ''; return; }
+        let html = '<ul class="pagination pagination-sm">';
+        html += '<li class="page-item' + (data.current <= 1 ? ' disabled' : '') + '">';
+        html += '<a class="page-link" href="javascript:void(0)" onclick="loadPosts(' + (data.current - 1) + ')">上一页</a></li>';
+        const start = Math.max(1, data.current - 2);
+        const end = Math.min(data.pages, data.current + 2);
+        for (let i = start; i <= end; i++) {
+            html += '<li class="page-item' + (i === data.current ? ' active' : '') + '">';
+            html += '<a class="page-link" href="javascript:void(0)" onclick="loadPosts(' + i + ')">' + i + '</a></li>';
+        }
+        html += '<li class="page-item' + (data.current >= data.pages ? ' disabled' : '') + '">';
+        html += '<a class="page-link" href="javascript:void(0)" onclick="loadPosts(' + (data.current + 1) + ')">下一页</a></li></ul>';
+        pag.innerHTML = html;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    loadPosts(currentPage);
+</script>
+</body>
+</html>

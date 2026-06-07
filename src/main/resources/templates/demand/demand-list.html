@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/head :: head('需求悬赏')}"></head>
+<body>
+
+<div th:replace="~{common/header :: header}"></div>
+
+<main class="bbs-main">
+<div class="bbs-container-narrow">
+    <div class="bbs-page-header">
+        <h4 class="bbs-page-title"><i class="bi bi-coin me-1"></i>需求悬赏</h4>
+        <a href="/demand-form" class="btn btn-bbs-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>发布需求</a>
+    </div>
+
+    <ul class="nav nav-pills bbs-nav-pills mb-4" id="statusFilter">
+        <li class="nav-item"><a class="nav-link active" href="javascript:void(0)" data-status="" onclick="filterByStatus('')">全部</a></li>
+        <li class="nav-item"><a class="nav-link" href="javascript:void(0)" data-status="0" onclick="filterByStatus('0')">进行中</a></li>
+        <li class="nav-item"><a class="nav-link" href="javascript:void(0)" data-status="1" onclick="filterByStatus('1')">已解决</a></li>
+        <li class="nav-item"><a class="nav-link" href="javascript:void(0)" data-status="2" onclick="filterByStatus('2')">已关闭</a></li>
+    </ul>
+
+    <div id="demandList"><div class="bbs-empty">加载中...</div></div>
+    <nav id="pagination" class="d-flex justify-content-center mt-3"></nav>
+</div>
+</main>
+
+<div th:replace="~{common/footer :: footer}"></div>
+<script src="/static/js/common.js"></script>
+<script>
+    const token = localStorage.getItem('token');
+    let currentStatus = '';
+
+    function apiGet(url) {
+        const headers = {};
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+        return fetch(url, { headers }).then(res => res.json());
+    }
+
+    function filterByStatus(status) {
+        currentStatus = status;
+        document.querySelectorAll('#statusFilter .nav-link').forEach(el => el.classList.remove('active'));
+        document.querySelector('[data-status="' + status + '"]').classList.add('active');
+        loadDemands(1);
+    }
+
+    function loadDemands(page) {
+        page = page || 1;
+        let url = '/api/v1/demands?page=' + page + '&size=10';
+        if (currentStatus !== '') url += '&status=' + currentStatus;
+        apiGet(url).then(result => {
+            if (result.code === 200) renderDemands(result.data);
+        });
+    }
+
+    function renderDemands(data) {
+        const container = document.getElementById('demandList');
+        if (!data.records || data.records.length === 0) {
+            container.innerHTML = '<div class="bbs-empty">暂无需求</div>';
+            document.getElementById('pagination').innerHTML = '';
+            return;
+        }
+        let html = '';
+        data.records.forEach(d => {
+            html += '<div class="bbs-demand-card p-3" onclick="location.href=\'/demand-detail?id=' + d.id + '\'">';
+            html += '<div class="d-flex justify-content-between align-items-start">';
+            html += '<div class="flex-grow-1"><h6 class="fw-bold mb-1">' + escapeHtml(d.title) + '</h6>';
+            html += '<small class="text-muted"><i class="bi bi-person me-1"></i>' + escapeHtml(d.authorName || '匿名');
+            html += ' · <i class="bi bi-chat me-1"></i>' + (d.replyCount || 0) + '条 · ' + (d.createTime || '') + '</small></div>';
+            html += '<div class="text-end ms-3"><div class="bbs-score-text mb-1"><i class="bi bi-coin"></i> ' + (d.score || 0) + '</div>';
+            html += '<span class="badge bbs-status-' + (d.status || 0) + '">' + (d.statusStr || '') + '</span></div>';
+            html += '</div></div>';
+        });
+        container.innerHTML = html;
+        const pag = document.getElementById('pagination');
+        if (data.pages <= 1) { pag.innerHTML = ''; return; }
+        let pagHtml = '<ul class="pagination pagination-sm">';
+        pagHtml += '<li class="page-item' + (data.current <= 1 ? ' disabled' : '') + '"><a class="page-link" href="javascript:void(0)" onclick="loadDemands(' + (data.current - 1) + ')">上一页</a></li>';
+        for (let i = Math.max(1, data.current - 2); i <= Math.min(data.pages, data.current + 2); i++) {
+            pagHtml += '<li class="page-item' + (i === data.current ? ' active' : '') + '"><a class="page-link" href="javascript:void(0)" onclick="loadDemands(' + i + ')">' + i + '</a></li>';
+        }
+        pagHtml += '<li class="page-item' + (data.current >= data.pages ? ' disabled' : '') + '"><a class="page-link" href="javascript:void(0)" onclick="loadDemands(' + (data.current + 1) + ')">下一页</a></li></ul>';
+        pag.innerHTML = pagHtml;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    loadDemands(1);
+</script>
+</body>
+</html>

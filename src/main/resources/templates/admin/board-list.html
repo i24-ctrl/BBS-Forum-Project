@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/head :: head('板块管理')}"></head>
+<body>
+
+<div th:replace="~{common/header :: header}"></div>
+
+<main class="bbs-main">
+<div class="bbs-container-wide">
+    <div class="bbs-card">
+        <div class="bbs-card-body">
+            <div class="bbs-page-header">
+                <h4 class="bbs-page-title"><i class="bi bi-folder me-1"></i>板块管理</h4>
+                <button class="btn btn-bbs-primary btn-sm" data-bs-toggle="modal" data-bs-target="#boardModal" onclick="openCreateModal()"><i class="bi bi-plus-lg me-1"></i>新增板块</button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle bbs-admin-table">
+                    <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>名称</th>
+                        <th>描述</th>
+                        <th>排序</th>
+                        <th>帖子数</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th style="width:200px;">操作</th>
+                    </tr>
+                    </thead>
+                    <tbody id="boardTableBody">
+                    <tr><td colspan="8" class="text-center text-muted">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 新增/编辑弹窗 -->
+<div class="modal fade" id="boardModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="boardModalTitle">新增板块</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editBoardId">
+                <div class="mb-3">
+                    <label class="form-label">板块名称 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="boardName" maxlength="100" placeholder="请输入板块名称">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">描述</label>
+                    <textarea class="form-control" id="boardDescription" rows="3" maxlength="500" placeholder="板块描述（可选）"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">排序</label>
+                    <input type="number" class="form-control" id="boardSortOrder" value="0" min="0">
+                    <div class="form-text">数字越小越靠前</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-bbs-primary" onclick="saveBoard()">保存</button>
+            </div>
+</div>
+</main>
+
+<div th:replace="~{common/footer :: footer}"></div>
+<div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+
+<script src="/static/js/common.js"></script>
+<script>
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = '/login'; }
+
+    let boardModal;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        boardModal = new bootstrap.Modal(document.getElementById('boardModal'));
+        loadBoards();
+    });
+
+    function apiGet(url) {
+        return fetch(url, { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(res => {
+                if (res.status === 401) { localStorage.clear(); window.location.href = '/login'; }
+                if (res.status === 403) { alert('无管理员权限'); window.location.href = '/'; }
+                return res.json();
+            });
+    }
+
+    function apiPost(url, data) {
+        return fetch(url, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }).then(res => {
+            if (res.status === 401) { localStorage.clear(); window.location.href = '/login'; }
+            if (res.status === 403) { alert('无管理员权限'); window.location.href = '/'; }
+            return res.json();
+        });
+    }
+
+    function apiPut(url, data) {
+        const options = {
+            method: 'PUT',
+            headers: { 'Authorization': 'Bearer ' + token }
+        };
+        if (data !== undefined) {
+            options.headers['Content-Type'] = 'application/json';
+            options.body = JSON.stringify(data);
+        }
+        return fetch(url, options).then(res => {
+            if (res.status === 401) { localStorage.clear(); window.location.href = '/login'; }
+            if (res.status === 403) { alert('无管理员权限'); window.location.href = '/'; }
+            return res.json();
+        });
+    }
+
+    function apiDel(url) {
+        return fetch(url, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
+            .then(res => {
+                if (res.status === 401) { localStorage.clear(); window.location.href = '/login'; }
+                if (res.status === 403) { alert('无管理员权限'); window.location.href = '/'; }
+                return res.json();
+            });
+    }
+
+    function showToast(message, type) {
+        const container = document.getElementById('toastContainer');
+        const bgClass = type === 'success' ? 'bg-success' : 'bg-danger';
+        const html = '<div class="toast align-items-center text-white ' + bgClass + ' border-0" role="alert">' +
+            '<div class="d-flex"><div class="toast-body">' + message + '</div>' +
+            '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>';
+        container.insertAdjacentHTML('beforeend', html);
+        const toastEl = container.lastElementChild;
+        const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', function () { toastEl.remove(); });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text == null ? '' : text;
+        return div.innerHTML;
+    }
+
+    function loadBoards() {
+        apiGet('/api/v1/admin/boards').then(result => {
+            if (result.code === 200) {
+                renderBoards(result.data || []);
+            } else {
+                showToast(result.msg, 'error');
+            }
+        });
+    }
+
+    function renderBoards(boards) {
+        const tbody = document.getElementById('boardTableBody');
+        if (!boards.length) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">暂无板块</td></tr>';
+            return;
+        }
+
+        let html = '';
+        boards.forEach(b => {
+            html += '<tr>';
+            html += '<td>' + b.id + '</td>';
+            html += '<td><strong>' + escapeHtml(b.name) + '</strong></td>';
+            html += '<td>' + escapeHtml(b.description || '-') + '</td>';
+            html += '<td>' + (b.sortOrder != null ? b.sortOrder : 0) + '</td>';
+            html += '<td>' + (b.postCount != null ? b.postCount : 0) + '</td>';
+            html += '<td><span class="badge bbs-status-' + b.status + '">' + (b.status === 1 ? '正常' : '禁用') + '</span></td>';
+            html += '<td><small>' + (b.createTime || '-') + '</small></td>';
+            html += '<td>';
+            html += '<button class="btn btn-outline-primary btn-sm me-1" onclick="openEditModal(' + b.id + ')">编辑</button>';
+            if (b.status === 1) {
+                html += '<button class="btn btn-outline-warning btn-sm me-1" onclick="toggleStatus(' + b.id + ',0)">禁用</button>';
+            } else {
+                html += '<button class="btn btn-outline-success btn-sm me-1" onclick="toggleStatus(' + b.id + ',1)">启用</button>';
+            }
+            html += '<button class="btn btn-outline-danger btn-sm" onclick="deleteBoard(' + b.id + ')">删除</button>';
+            html += '</td>';
+            html += '</tr>';
+        });
+        tbody.innerHTML = html;
+    }
+
+    function openCreateModal() {
+        document.getElementById('boardModalTitle').textContent = '新增板块';
+        document.getElementById('editBoardId').value = '';
+        document.getElementById('boardName').value = '';
+        document.getElementById('boardDescription').value = '';
+        document.getElementById('boardSortOrder').value = '0';
+    }
+
+    function openEditModal(id) {
+        apiGet('/api/v1/admin/boards').then(result => {
+            if (result.code !== 200) {
+                showToast(result.msg, 'error');
+                return;
+            }
+            const board = (result.data || []).find(b => b.id === id);
+            if (!board) {
+                showToast('板块不存在', 'error');
+                return;
+            }
+            document.getElementById('boardModalTitle').textContent = '编辑板块';
+            document.getElementById('editBoardId').value = board.id;
+            document.getElementById('boardName').value = board.name || '';
+            document.getElementById('boardDescription').value = board.description || '';
+            document.getElementById('boardSortOrder').value = board.sortOrder != null ? board.sortOrder : 0;
+            boardModal.show();
+        });
+    }
+
+    function saveBoard() {
+        const name = document.getElementById('boardName').value.trim();
+        const description = document.getElementById('boardDescription').value.trim();
+        const sortOrder = parseInt(document.getElementById('boardSortOrder').value, 10) || 0;
+        const editId = document.getElementById('editBoardId').value;
+
+        if (!name) {
+            showToast('板块名称不能为空', 'error');
+            return;
+        }
+
+        const body = { name: name, description: description, sortOrder: sortOrder };
+
+        if (editId) {
+            apiPut('/api/v1/admin/boards/' + editId, body).then(result => {
+                if (result.code === 200) {
+                    showToast('修改成功', 'success');
+                    boardModal.hide();
+                    loadBoards();
+                } else {
+                    showToast(result.msg, 'error');
+                }
+            });
+        } else {
+            apiPost('/api/v1/admin/boards', body).then(result => {
+                if (result.code === 200) {
+                    showToast('创建成功', 'success');
+                    boardModal.hide();
+                    loadBoards();
+                } else {
+                    showToast(result.msg, 'error');
+                }
+            });
+        }
+    }
+
+    function toggleStatus(id, status) {
+        const label = status === 1 ? '启用' : '禁用';
+        if (!confirm('确认' + label + '该板块？')) return;
+        apiPut('/api/v1/admin/boards/' + id + '/status?status=' + status).then(result => {
+            if (result.code === 200) {
+                showToast(result.msg, 'success');
+                loadBoards();
+            } else {
+                showToast(result.msg, 'error');
+            }
+        });
+    }
+
+    function deleteBoard(id) {
+        if (!confirm('确认删除该板块？此操作为逻辑删除。')) return;
+        apiDel('/api/v1/admin/boards/' + id).then(result => {
+            if (result.code === 200) {
+                showToast('删除成功', 'success');
+                loadBoards();
+            } else {
+                showToast(result.msg, 'error');
+            }
+        });
+    }
+</script>
+
+</body>
+</html>

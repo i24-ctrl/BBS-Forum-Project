@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/head :: head('首页')}"></head>
+<body>
+
+<div th:replace="~{common/header :: header}"></div>
+
+<main class="bbs-main">
+<div class="bbs-container">
+  <div class="bbs-hero">
+    <h2>欢迎来到校内BBS论坛</h2>
+    <p>交流技术、分享生活、悬赏互助 — 属于我们自己的校内社区</p>
+  </div>
+
+  <div class="row g-3 mb-4 bbs-quick-grid">
+    <div class="col-6 col-md-3">
+      <a href="/posts" class="bbs-quick-btn">
+        <i class="bi bi-chat-square-text"></i><span>浏览帖子</span>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="/post-form" class="bbs-quick-btn">
+        <i class="bi bi-pencil-square"></i><span>发布帖子</span>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="/demands" class="bbs-quick-btn">
+        <i class="bi bi-coin"></i><span>需求悬赏</span>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="/boards" class="bbs-quick-btn">
+        <i class="bi bi-grid"></i><span>所有板块</span>
+      </a>
+    </div>
+  </div>
+
+  <h5 class="bbs-section-title"><i class="bi bi-fire text-danger"></i> 热门板块</h5>
+  <div class="row g-3 mb-4" id="boardCards">
+    <div class="col-12 bbs-empty py-3">加载中...</div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <h5 class="bbs-section-title"><i class="bi bi-clock-history"></i> 最新帖子</h5>
+      <div id="latestPosts">
+        <div class="bbs-empty py-4">加载中...</div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="bbs-stats-card p-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart me-1"></i>论坛统计</h6>
+        <div id="siteStats"><p class="text-muted small mb-0">加载中...</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+</main>
+
+<div th:replace="~{common/footer :: footer}"></div>
+<div class="toast-container position-fixed top-0 end-0 p-3" id="globalToastContainer"></div>
+<script src="/static/js/common.js"></script>
+<script>
+(function () {
+  BbsApi.get('/api/v1/boards').then(function (result) {
+    var container = document.getElementById('boardCards');
+    if (result.code !== 200 || !result.data || result.data.length === 0) {
+      container.innerHTML = '<div class="col-12 bbs-empty">暂无板块</div>';
+      return;
+    }
+    var iconMap = { '技术交流': 'bi-code-slash', '校园生活': 'bi-house-heart', '二手交易': 'bi-cart', '求职招聘': 'bi-briefcase' };
+    var colorMap = { '技术交流': '#6366f1', '校园生活': '#10b981', '二手交易': '#f59e0b', '求职招聘': '#8b5cf6' };
+    var html = '';
+    result.data.slice(0, 4).forEach(function (b) {
+      var icon = iconMap[b.name] || 'bi-chat-dots';
+      var color = colorMap[b.name] || '#64748b';
+      html += '<div class="col-sm-6 col-md-3">';
+      html += '<div class="bbs-board-card" onclick="location.href=\'/posts?boardId=' + b.id + '\'">';
+      html += '<div class="card-body text-center py-4">';
+      html += '<i class="bi ' + icon + ' bbs-board-icon d-block mb-2" style="color:' + color + '"></i>';
+      html += '<h6 class="fw-bold mb-1">' + BbsUtil.escapeHtml(b.name) + '</h6>';
+      html += '<small class="text-muted"><i class="bi bi-file-text me-1"></i>' + (b.postCount || 0) + ' 篇</small>';
+      html += '</div></div></div>';
+    });
+    container.innerHTML = html;
+  }).catch(function () {});
+
+  BbsApi.get('/api/v1/posts?page=1&size=8').then(function (result) {
+    var container = document.getElementById('latestPosts');
+    if (result.code !== 200 || !result.data || !result.data.records || result.data.records.length === 0) {
+      container.innerHTML = '<div class="bbs-empty">暂无帖子，<a href="/post-form">发一篇吧</a></div>';
+      return;
+    }
+    var html = '';
+    result.data.records.forEach(function (p) {
+      html += '<div class="bbs-post-item" onclick="location.href=\'/post-detail?id=' + p.id + '\'">';
+      html += '<div class="mb-1">';
+      if (p.isTop === 2) html += '<span class="badge bbs-badge-top me-1">置顶</span>';
+      if (p.isEssence === 1) html += '<span class="badge bbs-badge-essence me-1">精华</span>';
+      html += '<span class="bbs-post-title">' + BbsUtil.escapeHtml(p.title) + '</span></div>';
+      html += '<div class="bbs-post-meta">';
+      html += '<i class="bi bi-person me-1"></i>' + BbsUtil.escapeHtml(p.authorName || '匿名');
+      if (p.boardName) html += ' · [' + BbsUtil.escapeHtml(p.boardName) + ']';
+      html += ' · <i class="bi bi-eye ms-1"></i> ' + (p.viewCount || 0);
+      html += ' · <i class="bi bi-chat ms-1"></i> ' + (p.replyCount || 0);
+      html += ' · ' + (p.lastReplyTimeStr || BbsUtil.formatTime(p.createTime));
+      html += '</div></div>';
+    });
+    container.innerHTML = html;
+    document.getElementById('siteStats').innerHTML =
+      '<div class="stat-num">' + result.data.records.length + '</div>' +
+      '<p class="small text-muted mb-0">条最新帖子 · <a href="/posts">查看全部</a></p>';
+  }).catch(function () {});
+})();
+</script>
+</body>
+</html>

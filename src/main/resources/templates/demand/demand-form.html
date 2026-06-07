@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{common/head :: assets('发布需求')}"></th:block>
+    <link href="https://unpkg.com/@wangeditor/editor@5.1.23/dist/css/style.css" rel="stylesheet">
+    <style>
+        #editor—toolbar-wrapper { border: 1px solid var(--bbs-border); border-bottom: none; border-radius: 10px 10px 0 0; }
+        #editor—wrapper { border: 1px solid var(--bbs-border); border-radius: 0 0 10px 10px; }
+        #editor-container { min-height: 300px; }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{common/header :: header}"></div>
+
+<main class="bbs-main">
+<div class="bbs-container-narrow">
+    <div class="bbs-card">
+        <div class="bbs-card-body">
+            <h4 class="bbs-page-title mb-4"><i class="bi bi-coin me-1"></i>发布悬赏需求</h4>
+
+            <div class="alert alert-info small">
+                💡 发布需求将<b>冻结</b>您的悬赏积分。采纳回复后积分发放给解决者；关闭需求则退回积分。
+            </div>
+
+            <form id="demandForm">
+                <!-- 标题 -->
+                <div class="mb-3">
+                    <label class="form-label">标题 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="demandTitle"
+                           placeholder="请输入需求标题（3-200字）" maxlength="200" required>
+                </div>
+
+                <!-- wangEditor 富文本编辑器 -->
+                <div class="mb-3">
+                    <label class="form-label">详细描述 <span class="text-danger">*</span></label>
+                    <div id="editor—toolbar-wrapper">
+                        <div id="editor—toolbar"></div>
+                    </div>
+                    <div id="editor—wrapper">
+                        <div id="editor-container"></div>
+                    </div>
+                </div>
+
+                <!-- 悬赏积分 -->
+                <div class="mb-3">
+                    <label class="form-label">悬赏积分 <span class="text-danger">*</span></label>
+                    <div class="score-input-group">
+                        <div class="input-group">
+                            <span class="input-group-text">🪙</span>
+                            <input type="number" class="form-control" id="demandScore"
+                                   placeholder="至少1积分" min="1" required>
+                        </div>
+                    </div>
+                    <div class="form-text">当前可用积分：<strong id="currentScore">-</strong></div>
+                </div>
+
+                <button type="button" class="btn btn-bbs-primary px-4" id="submitBtn" onclick="submitDemand()">
+                    <i class="bi bi-coin me-1"></i>发布悬赏
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+</main>
+
+<div th:replace="~{common/footer :: footer}"></div>
+<div class="toast-container position-fixed top-0 end-0 p-3" id="globalToastContainer"></div>
+
+<script src="https://unpkg.com/@wangeditor/editor@5.1.23/dist/index.js"></script>
+<script src="/static/js/common.js"></script>
+<script>
+    (function () {
+        var token = localStorage.getItem('token');
+        if (!token) {
+            if (confirm('请先登录后再发布需求，是否跳转到登录页？')) {
+                window.location.href = '/login';
+            }
+        }
+
+        // 加载用户积分
+        if (token) {
+            BbsApi.get('/api/v1/user/profile').then(function (result) {
+                if (result.code === 200 && result.data) {
+                    document.getElementById('currentScore').textContent = result.data.score || 0;
+                }
+            }).catch(function () {});
+        }
+
+        // 初始化 wangEditor
+        var editorConfig = {
+            placeholder: '请详细描述您的需求...',
+            MENU_CONF: {
+                uploadImage: {
+                    server: '/api/v1/upload/image',
+                    fieldName: 'file',
+                    maxFileSize: 2 * 1024 * 1024,
+                    maxNumberOfFiles: 5,
+                    allowedFileTypes: ['image/jpeg', 'image/png', 'image/gif'],
+                    customInsert: function (res, insertFn) {
+                        if (res.errno === 0 && res.data && res.data.length > 0) {
+                            insertFn(res.data[0].url, res.data[0].alt || '', res.data[0].href || '');
+                        } else {
+                            alert(res.message || '图片上传失败');
+                        }
+                    }
+                }
+            }
+        };
+
+        var editor = window.wangEditor.createEditor({
+            selector: '#editor-container',
+            html: '',
+            config: editorConfig,
+            mode: 'default'
+        });
+
+        window.wangEditor.createToolbar({
+            editor: editor,
+            selector: '#editor—toolbar',
+            config: { excludeKeys: ['fullScreen'] },
+            mode: 'default'
+        });
+
+        // 提交
+        window.submitDemand = function () {
+            if (!token) {
+                BbsToast.error('请先登录');
+                return;
+            }
+
+            var title = document.getElementById('demandTitle').value.trim();
+            var content = editor.getHtml();
+            var score = parseInt(document.getElementById('demandScore').value);
+
+            if (!title || title.length < 3) { BbsToast.error('标题至少3个字'); return; }
+            if (!content || content === '<p><br></p>') { BbsToast.error('请输入详细描述'); return; }
+            if (!score || score < 1) { BbsToast.error('悬赏积分至少为1'); return; }
+
+            var submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '发布中...';
+
+            BbsApi.post('/api/v1/demands', {
+                title: title,
+                content: content,
+                score: score
+            }).then(function (result) {
+                if (result.code === 200) {
+                    BbsToast.success('需求发布成功！积分已冻结');
+                    setTimeout(function () {
+                        window.location.href = '/demand-detail?id=' + result.data.id;
+                    }, 1000);
+                } else {
+                    BbsToast.error(result.msg);
+                }
+            }).catch(function () {
+                BbsToast.error('网络异常');
+            }).finally(function () {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '💰 发布悬赏';
+            });
+        };
+    })();
+</script>
+
+</body>
+</html>

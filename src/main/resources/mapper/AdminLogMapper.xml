@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bbs.mapper.AdminLogMapper">
+
+    <!-- 分页查询管理员操作日志（含管理员用户名） -->
+    <select id="selectLogListWithAdmin" resultType="com.bbs.entity.AdminLog">
+        SELECT
+        al.id,
+        al.admin_id AS adminId,
+        al.action,
+        al.target_type AS targetType,
+        al.target_id AS targetId,
+        al.old_value AS oldValue,
+        al.new_value AS newValue,
+        al.ip,
+        al.create_time AS createTime
+        FROM admin_log al
+        WHERE 1 = 1
+        <if test="targetType != null and targetType != ''">
+            AND al.target_type = #{targetType}
+        </if>
+        <if test="adminId != null">
+            AND al.admin_id = #{adminId}
+        </if>
+        ORDER BY al.create_time DESC
+    </select>
+
+</mapper>
